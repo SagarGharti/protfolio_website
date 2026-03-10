@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sagar Gharti</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dist/output.css">
+  <style>
+    body {
+      font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* ===== Motion + micro-interactions (no libraries) ===== */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      opacity: 1;
+      transition: opacity 500ms ease;
+    }
+    body.is-loading {
+      opacity: 0;
+    }
+    body.is-loaded {
+      opacity: 1;
+    }
+
+    /* Scroll reveal */
+    .reveal {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
+      filter: blur(6px);
+      transition:
+        opacity 700ms cubic-bezier(.2,.7,.2,1),
+        transform 700ms cubic-bezier(.2,.7,.2,1),
+        filter 700ms cubic-bezier(.2,.7,.2,1);
+      will-change: opacity, transform, filter;
+    }
+    .reveal.is-visible {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+      filter: blur(0);
+    }
+    .reveal[data-reveal="fade"] {
+      transform: none;
+    }
+    .reveal[data-reveal="scale"] {
+      transform: scale(.96);
+    }
+    .reveal.is-visible[data-reveal="scale"] {
+      transform: scale(1);
+    }
+
+    /* Hover feedback */
+    .hover-lift {
+      transition: transform 220ms ease, box-shadow 220ms ease, opacity 220ms ease;
+      will-change: transform;
+    }
+    .hover-lift:hover {
+      transform: translate3d(0, -3px, 0);
+    }
+
+    /* Animated nav underline */
+    .nav-ink {
+      position: absolute;
+      left: 0;
+      bottom: -6px;
+      height: 2px;
+      width: 0;
+      border-radius: 999px;
+      background: #f26b1d;
+      transform: translate3d(0, 0, 0);
+      transition: transform 350ms cubic-bezier(.2,.7,.2,1), width 350ms cubic-bezier(.2,.7,.2,1), opacity 200ms ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .nav-link.is-active {
+      color: rgb(24 24 27); /* zinc-900 */
+    }
+
+    /* Cursor feedback (desktop only) */
+    #cursor-dot,
+    #cursor-ring {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    /* Cursor spray canvas */
+    #cursor-spray {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9998;
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+    #cursor-dot {
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #ec4899, #f97316);
+      transform: translate3d(-50%, -50%, 0);
+    }
+    #cursor-ring {
+      width: 52px;
+      height: 52px;
+      border-radius: 999px;
+      background: rgba(242, 107, 29, 0.28);
+      box-shadow: 0 12px 32px rgba(242, 107, 29, 0.22);
+      transform: translate3d(-50%, -50%, 0);
+    }
+    body.cursor-ready #cursor-dot,
+    body.cursor-ready #cursor-ring {
+      opacity: 1;
+    }
+    body.cursor-ready #cursor-spray {
+      opacity: 1;
+    }
+    body.cursor-hover #cursor-ring {
+      transform: translate3d(-50%, -50%, 0) scale(1.25);
+      background: rgba(242, 107, 29, 0.34);
+      box-shadow: 0 16px 44px rgba(242, 107, 29, 0.28);
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+      body {
+        transition: none;
+      }
+      .reveal,
+      .hover-lift,
+      .nav-ink,
+      #cursor-dot,
+      #cursor-ring,
+      #cursor-spray {
+        transition: none !important;
+        filter: none !important;
+        transform: none !important;
+      }
+      .reveal {
+        opacity: 1 !important;
+      }
+      #cursor-dot,
+      #cursor-ring,
+      #cursor-spray {
+        display: none !important;
+      }
+    }
+
+    /* Hamburger to X animation when menu is open */
+    #menu-btn.open .menu-bar:nth-child(1) {
+      transform: translateY(4px) rotate(45deg);
+    }
+    #menu-btn.open .menu-bar:nth-child(2) {
+      opacity: 0;
+    }
+    #menu-btn.open .menu-bar:nth-child(3) {
+      transform: translateY(-4px) rotate(-45deg);
+    }
+  </style>
+</head>
+<body>
+  <!-- Page wrapper -->
+  <div class="min-h-screen bg-[#e9e7df] text-zinc-900 font-sans">
+    <!-- Top nav -->
+    <header class="border-b border-zinc-200/70 bg-[#e9e7df]/80 backdrop-blur-sm sticky top-0 z-40">
+      <div class="container-x flex items-center justify-between py-3 sm:py-4 lg:py-5 xl:py-6 text-[12px] sm:text-[13px] lg:text-[14px] xl:text-[15px] uppercase tracking-[0.12em]">
+        <button type="button" data-nav="about" class="flex items-center gap-2 min-w-0 nav-link hover-lift text-left cursor-pointer hover:opacity-80 transition-opacity">
+          <span class="font-bold shrink-0">By Saagar</span>
+          <span class="h-3 w-px bg-zinc-400/70 shrink-0 hidden sm:block"></span>
+          <span class="font-semibold truncate hidden sm:inline">(Web Designer &amp; Developer)</span>
+        </button>
+
+        <!-- Menu bar button - visible on mobile & tablet -->
+        <button id="menu-btn" type="button" class="lg:hidden flex flex-col justify-center items-center gap-1.5 w-10 h-10 rounded-md hover:bg-zinc-200/50 transition-colors" aria-label="Toggle menu" aria-expanded="false">
+          <span class="menu-bar w-6 h-0.5 bg-zinc-700 rounded transition-all"></span>
+          <span class="menu-bar w-6 h-0.5 bg-zinc-700 rounded transition-all"></span>
+          <span class="menu-bar w-6 h-0.5 bg-zinc-700 rounded transition-all"></span>
+        </button>
+
+        <!-- Desktop nav - hidden on mobile & tablet -->
+        <nav id="desktop-nav" class="relative font-medium hidden lg:flex items-center gap-6 lg:gap-8 xl:gap-10 2xl:gap-12 text-[14px] lg:text-[14px] xl:text-[15px] text-zinc-700">
+          <button type="button" data-nav="services" class="hover:text-zinc-950 nav-link hover-lift">Services</button>
+          <button type="button" data-nav="projects" class="hover:text-zinc-950 nav-link hover-lift">Projects</button>
+          <button type="button" data-nav="contact" class="hover:text-zinc-950 nav-link hover-lift">Contact</button>
+          <span id="nav-ink" class="nav-ink" aria-hidden="true"></span>
+        </nav>
+      </div>
+
+      <!-- Mobile/tablet menu - dropdown when menu bar is clicked -->
+      <div id="mobile-menu" class="lg:hidden hidden border-t border-zinc-200/70 bg-[#e9e7df]/95 backdrop-blur-sm">
+        <nav class="container-x py-4 sm:py-5 flex flex-col gap-2 sm:gap-3 text-[12px] sm:text-[13px] uppercase tracking-normal text-zinc-700">
+          <button type="button" data-nav="services" class="menu-link nav-link py-2 text-left hover:text-zinc-950 hover:bg-zinc-200/30 rounded px-2 -mx-2 transition-colors">Services</button>
+          <button type="button" data-nav="projects" class="menu-link nav-link py-2 text-left hover:text-zinc-950 hover:bg-zinc-200/30 rounded px-2 -mx-2 transition-colors">Projects</button>
+          <button type="button" data-nav="contact" class="menu-link nav-link py-2 text-left hover:text-zinc-950 hover:bg-zinc-200/30 rounded px-2 -mx-2 transition-colors">Contact</button>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero / About -->
+      <section id="about" class="bg-[#e9e7df] pt-8 sm:pt-10 md:pt-12 xl:pt-16 2xl:pt-20">
+        <div class="container-x flex flex-col items-center">
+          <h1 class="reveal text-[36px] sm:text-[48px] md:text-[60px] lg:text-[72px] xl:text-[80px] 2xl:text-[88px] font-extrabold tracking-[0.12em] text-[#f26b1d] text-center leading-[1.45]" data-reveal="fade" style="transition-delay: 60ms">
+            SAAGAR CHETRRI
+          </h1>
+
+          <div class="relative mt-8 flex flex-col items-center">
+            <div id="hero-frame" class="reveal relative rounded-t-[16px] md:rounded-t-[16px] bg-zinc-900 shadow-[0_24px_60px_rgba(0,0,0,0.45)] overflow-hidden" data-reveal="fade" style="transition-delay: 140ms">
+              <img
+                src="/public/images/Rectangle 30.svg"
+                alt="Sagar Gharti portrait"
+                class="h-[280px] sm:h-[320px] md:h-[420px] lg:h-[480px] xl:h-[520px] 2xl:h-[560px] w-auto object-cover"
+              />
+            </div>
+
+            <!-- Left sticky note -->
+            <!-- <div class="absolute -left-24 top-16 hidden w-48 rounded-[6px] bg-[#f6e9d0] px-4 py-3 text-[12px] leading-loose text-zinc-800 shadow-md md:block"> I design high-end web experiences that engage your audience and help you focus on scaling your business. </div>
+
+             Right sticky note -->
+            <!-- <div class="absolute -right-24 top-16 hidden w-48 rounded-[6px] bg-[#f6e9d0] px-4 py-3 text-[12px] leading-loose  text-zinc-800 shadow-md md:block"> I design high-end web experiences that engage your audience and help you focus on scaling your business. </div> --> 
+
+            <!-- Date on right -->
+            <span class="absolute -right-24 bottom-6 text-[13px] font-bold tracking-[0.12em] text-[#f26b1d] md:block hidden">
+              1996-10-27
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Services -->
+      <section id="services" class="section-dark py-6 sm:py-10 md:py-20 xl:py-24 2xl:py-28">
+        <div class="container-x">
+          <div class="reveal flex flex-col items-start gap-4 sm:gap-6 md:flex-row md:items-start md:justify-between" data-reveal="fade">
+            <h2 class="text-left text-lg sm:text-xl font-bold md:text-2xl xl:text-3xl 2xl:text-[2rem] tracking-[0.2em] uppercase text-zinc-50">
+              How Can I Help You
+            </h2>
+
+            <div class="text-left text-zinc-400">
+              <div class="inline-flex flex-col items-start gap-2">
+                <span class="text-left text-xs sm:text-sm uppercase tracking-[0.2em] text-zinc-50">Services</span>
+                <span class="h-px w-8 bg-zinc-400/70"></span>
+                <p class="max-w-[220px] text-[12px] leading-normal text-zinc-400">
+                  I design high-end web experiences that engage your audience and help you focus on
+                  scaling your business.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 sm:mt-12 md:mt-14 space-y-10 sm:space-y-12 md:space-y-14 lg:space-y-16">
+            <!-- Service 01 -->
+            <div class="reveal border-t border-zinc-800/80 pt-6 sm:pt-8" data-reveal="fade">
+              <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                <span class="text-xl font-semibold tracking-[0.2em] text-zinc-200">01</span>
+                <div class="max-w-xl space-y-3">
+                  <h3 class="text-xl font-semibold text-zinc-50">Product Design</h3>
+                  <p class="text-[14px] leading-loose text-zinc-400">
+                    Design user-centered solutions that tackle real-world challenges, focusing on creating meaningful experiences for users. By integrating in-depth research, strategic thinking, and creative problem-solving, I transform concepts into intuitive, visually appealing, and highly engaging digital products. My approach ensures that every design decision aligns with user needs, business goals, and measurable outcomes, delivering solutions that are both practical and impactful.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Service 02 -->
+            <div class="reveal border-t border-zinc-800/80 pt-6 sm:pt-8" data-reveal="fade">
+              <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                <span class="text-xl font-semibold tracking-[0.2em] text-zinc-200">02</span>
+                <div class="max-w-xl space-y-3">
+                  <h3 class="text-xl font-semibold text-zinc-50">Web Development</h3>
+                  <p class="text-[14px] leading-loose text-zinc-400">
+                    Turn ideas into responsive, high-performance websites and landing pages, combining modern technologies and best practices. I ensure seamless user experiences, fast load times, and scalable solutions that adapt to business growth, engage users effectively, and drive measurable results.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Service 03 -->
+            <div class="reveal border-t border-zinc-800/80 pt-6 sm:pt-8" data-reveal="fade">
+              <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                <span class="text-xl font-semibold tracking-[0.2em] text-zinc-200">03</span>
+                <div class="max-w-xl space-y-3">
+                  <h3 class="text-xl font-semibold text-zinc-50">Graphics and SEO</h3>
+                  <p class="text-[14px] leading-loose text-zinc-400">
+                    Create visually striking designs and optimize content for maximum online visibility. By combining creative graphics with effective SEO strategies, I help brands engage audiences, boost traffic, and achieve measurable results.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- Projects -->
+      <section id="projects" class="section-dark pb-14 pt-10 sm:pb-16 sm:pt-12 md:pb-20 md:pt-12 xl:pb-24 xl:pt-16 2xl:pb-28 2xl:pt-20">
+        <div class="container-x">
+          <div class="reveal flex flex-col gap-6 md:flex-row md:items-start md:justify-between" data-reveal="fade">
+            <h2 class="text-lg sm:text-xl font-bold md:text-2xl xl:text-3xl 2xl:text-[2rem] tracking-[0.2em] uppercase text-zinc-50">
+              Some key projects
+            </h2>
+
+            <div class="text-left text-zinc-400">
+              <div class="inline-flex flex-col items-start gap-2">
+                <span class="text-left text-xs sm:text-sm uppercase tracking-[0.2em] text-zinc-50">Works</span>
+                <span class="h-px w-8 bg-zinc-500"></span>
+                <p class="max-w-[220px] text-[12px] leading-normal text-zinc-400">
+                  Featured projects that have been meticulously crafted with precision to drive
+                  real results on impact.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 sm:mt-10 space-y-8 sm:space-y-10 md:space-y-12">
+            <!-- Project 01 -->
+            <div class="reveal hover-lift grid gap-6 sm:gap-8 rounded-2xl sm:rounded-3xl bg-zinc-900/90 px-4 py-8 sm:px-6 sm:py-10 shadow-[0_24px_60px_rgba(0,0,0,0.65)] md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] md:px-10 xl:px-12 2xl:px-14" data-reveal="scale">
+              <div class="space-y-4 text-zinc-200">
+                <span class="text-xl font-semibold tracking-[0.2em] text-zinc-50">01</span>
+                <p class="text-[14px] leading-loose text-zinc-400">
+                  Basiyo is a premier rental platform that enables hosts to earn additional income by offering their spare homes or rooms to travelers. For guests, Basiyo provides a comfortable, affordable, and unique place to stay. <br> <br> As a UI/UX Designer at Basiyo, I contributed to creating intuitive and seamless experiences for both hosts and guests. My responsibilities included user research, wireframing, prototyping, and usability testing to ensure the platform is easy to navigate, visually engaging, and optimized for conversions. I focused on enhancing user satisfaction, streamlining booking flows, and delivering a consistent, delightful experience across web and mobile platforms.
+                </p>
+              </div>
+              <div class="flex flex-col items-center gap-4">
+                <div class="relative w-full overflow-hidden rounded-2xl bg-zinc-800">
+                  <img src="/public/images/basiyo.png" alt="Basiyo" class="w-full object-cover" />
+                </div>
+                <a href="https://basiyo.com/" class="text-center text-sm text-zinc-300 underline hover:text-yellow-400 hover:font-bold transition-colors">Basiyo</a>
+              </div>
+            </div>
+
+            <!-- Project 02 -->
+            <div class="reveal hover-lift grid gap-6 sm:gap-8 rounded-2xl sm:rounded-3xl bg-zinc-900/90 px-4 py-8 sm:px-6 sm:py-10 shadow-[0_24px_60px_rgba(0,0,0,0.65)] md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] md:px-10 xl:px-12 2xl:px-14" data-reveal="scale">
+              <div class="space-y-4 text-zinc-200">
+                <span class="text-xl font-semibold tracking-[0.3em] text-zinc-50">02</span>
+                <p class="text-[14px] leading-loose text-zinc-400">
+                  Basiyo is a premier rental platform that enables hosts to earn additional income by offering their spare homes or rooms to travelers. As a UI/UX Designer for the Basiyo app, I designed intuitive interfaces and streamlined user flows for both hosts and guests. My work included user research, wireframing, prototyping, and high-fidelity design, ensuring the app was easy to navigate, visually engaging, and optimized for a smooth booking experience. I focused on enhancing user satisfaction, simplifying interactions, and creating a consistent experience across mobile platforms.
+                </p>
+              </div>
+              <div class="flex flex-col items-center gap-4">
+                <div class="relative w-full overflow-hidden rounded-2xl bg-zinc-800">
+                  <img src="/public/images/basiyo_app.png" alt="Basiyo App" class="w-full object-cover" />
+                </div>
+                <a href="https://basiyo.com/" class="text-center text-sm text-zinc-300 underline hover:text-yellow-400 hover:font-bold transition-colors">Basiyo App</a>
+              </div>
+            </div>
+
+            <!-- Project 03 -->
+            <div class="reveal hover-lift grid gap-6 sm:gap-8 rounded-2xl sm:rounded-3xl bg-zinc-900/90 px-4 py-8 sm:px-6 sm:py-10 shadow-[0_24px_60px_rgba(0,0,0,0.65)] md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] md:px-10 xl:px-12 2xl:px-14" data-reveal="scale">
+              <div class="space-y-4 text-zinc-200">
+                <span class="text-xl font-semibold tracking-[0.2em] text-zinc-50">03</span>
+                <p class="text-[14px] leading-loose text-zinc-400">
+                  Paicho Pasal Private Limited was established in 2071. Main goal of the PaichoPasal is to best utilize the products of farmers, support them to product organic agricultural products, promote markets of farmers' products and provide them the direct benefits in value chain basis.
+                  <br><br>As a UI/UX Designer at Paicho Pasal, I focused on creating user-centered interfaces and improving the overall user experience. My responsibilities included conducting user research, developing wireframes and prototypes, and designing high-fidelity visuals to ensure the platform was intuitive, visually consistent, and aligned with the brand’s identity.
+                </p>
+              </div>
+              <div class="flex flex-col items-center gap-4">
+                <div class="relative w-full overflow-hidden rounded-2xl bg-zinc-800">
+                  <img src="/public/images/Paicho 1.png" alt="Paradox Parcel" class="w-full object-cover" />
+                </div>
+                <a href="https://paicho.com/" class="text-center text-sm text-zinc-300 underline hover:text-yellow-400 hover:font-bold transition-colors">Paicho Pasal</a>
+              </div>
+            </div>
+
+            <!-- Project 04 -->
+            <div class="reveal hover-lift grid gap-6 sm:gap-8 rounded-2xl sm:rounded-3xl bg-zinc-900/90 px-4 py-8 sm:px-6 sm:py-10 shadow-[0_24px_60px_rgba(0,0,0,0.65)] md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] md:px-10 xl:px-12 2xl:px-14" data-reveal="scale">
+              <div class="space-y-4 text-zinc-200">
+                <span class="text-xl font-semibold tracking-[0.2em] text-zinc-50">04</span>
+                <p class="text-[14px] leading-loose text-zinc-400">
+                  Nepathya AI DeFi is a cutting-edge blockchain project that combines decentralized finance (DeFi) technologies with artificial intelligence to deliver secure, transparent, and intelligent financial solutions. The platform is designed to empower users through trustless, automated protocols for lending, staking, yield optimization, and risk management, all built on the immutable infrastructure of blockchain.
+                </p>
+              </div>
+              <div class="flex flex-col items-center gap-4">
+                <div class="relative w-full overflow-hidden rounded-2xl bg-zinc-800">
+                  <img src="/public/images/defi.png" alt="Nepali XT Debit Wallet" class="w-full object-cover" />
+                </div>
+                <a href="#" class="text-center text-sm text-zinc-300 underline hover:text-yellow-400 hover:font-bold transition-colors">Nepathya Defi Wallet</a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA / Contact -->
+      <section id="contact" class="bg-[#e9e7df] py-12 sm:py-14 md:py-16 xl:py-20 2xl:py-24">
+        <div class="container-x">
+          <div class="reveal flex flex-col gap-8 sm:gap-10 rounded-2xl sm:rounded-[28px] border border-zinc-300/80 bg-[#efe8dd] px-4 py-8 sm:px-6 sm:py-10 md:flex-row md:items-center md:justify-between md:px-10 xl:px-12 xl:py-12 2xl:px-14" data-reveal="scale">
+            <div class="flex items-center gap-4">
+              <div class="h-10 w-10 overflow-hidden rounded-full bg-zinc-900">
+                <img
+                  src="/public/images/let's.png"
+                  alt="Sagar avatar"
+                  class="h-full w-full object-cover"
+                />
+              </div>
+              <div>
+                <p class="text-base sm:text-lg md:text-lg xl:text-xl font-semibold text-zinc-900">Let&apos;s work together</p>
+                <p class="text-[12px] text-zinc-600">
+                  Tell me about your project and let&apos;s build something great.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-1 flex-col gap-4 md:flex-row md:items-center md:justify-end">
+              <div class="flex flex-1 flex-col gap-2 text-[14px]">
+                <span class="rounded-full border border-zinc-300 bg-white/70 px-4 py-2 text-zinc-700">
+                  sagar.gc.51design@gmail.com
+                </span>
+                <span class="rounded-full border border-zinc-300 bg-white/70 px-4 py-2 text-zinc-700">
+                  +977 9866145679
+                </span>
+              </div>
+              <button
+                class="hover-lift inline-flex h-16 w-16 sm:h-20 sm:w-20 md:h-[4.75rem] md:w-[4.75rem] lg:h-20 lg:w-20 xl:h-24 xl:w-24 items-center justify-center rounded-full bg-[#f26b1d] text-white shadow-lg hover:bg-orange-600 transition-colors shrink-0"
+              >
+                <span class="text-[12px] sm:text-[13px] font-semibold leading-tight text-center">
+                  <span class="block">Get</span>
+                  <span class="block">in touch</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="bg-[#e9e7df] pb-4 pt-4 sm:pb-5 sm:pt-5 md:pb-6 xl:py-6 2xl:py-8">
+        <div class="container-x flex flex-col items-center justify-between gap-3 border-t border-zinc-300/70 pt-4 text-[12px] sm:text-[13px] md:text-[14px] xl:text-[15px] text-zinc-600 md:flex-row">
+          <div class="flex gap-4">
+            <span>Email: sagar.gc.51design@gmail.com</span>
+          </div>
+          <div class="flex items-center gap-4"> 
+
+            <a href="https://www.linkedin.com/in/saagar-chetrri-2686b7165/" class="hover:text-zinc-900">
+              <svg width="20px" height="20px" viewBox="0 0 24 24" role="img" xmlns="http://www.w3.org/2000/svg"><title>Dribbble icon</title><path d="M12 24C5.385 24 0 18.615 0 12S5.385 0 12 0s12 5.385 12 12-5.385 12-12 12zm10.12-10.358c-.35-.11-3.17-.953-6.384-.438 1.34 3.684 1.887 6.684 1.992 7.308 2.3-1.555 3.936-4.02 4.395-6.87zm-6.115 7.808c-.153-.9-.75-4.032-2.19-7.77l-.066.02c-5.79 2.015-7.86 6.025-8.04 6.4 1.73 1.358 3.92 2.166 6.29 2.166 1.42 0 2.77-.29 4-.814zm-11.62-2.58c.232-.4 3.045-5.055 8.332-6.765.135-.045.27-.084.405-.12-.26-.585-.54-1.167-.832-1.74C7.17 11.775 2.206 11.71 1.756 11.7l-.004.312c0 2.633.998 5.037 2.634 6.855zm-2.42-8.955c.46.008 4.683.026 9.477-1.248-1.698-3.018-3.53-5.558-3.8-5.928-2.868 1.35-5.01 3.99-5.676 7.17zM9.6 2.052c.282.38 2.145 2.914 3.822 6 3.645-1.365 5.19-3.44 5.373-3.702-1.81-1.61-4.19-2.586-6.795-2.586-.825 0-1.63.1-2.4.285zm10.335 3.483c-.218.29-1.935 2.493-5.724 4.04.24.49.47.985.68 1.486.08.18.15.36.22.53 3.41-.43 6.8.26 7.14.33-.02-2.42-.88-4.64-2.31-6.38z"/></svg>
+            </a>
+            <a href="https://www.behance.net/sagargc" class="hover:text-zinc-900">
+              <svg width="20px" height="20px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.803 5.731c.589 0 1.119.051 1.605.155.483.103.895.273 1.243.508.343.235.611.547.804.939.187.387.28.871.28 1.443 0 .62-.14 1.138-.421 1.551-.283.414-.7.753-1.256 1.015.757.219 1.318.602 1.69 1.146.374.549.557 1.206.557 1.976 0 .625-.119 1.162-.358 1.613a3.11 3.11 0 0 1-.974 1.114 4.315 4.315 0 0 1-1.399.64 6.287 6.287 0 0 1-1.609.206H2V5.731h5.803zm-.351 4.972c.48 0 .878-.114 1.192-.345.312-.228.463-.604.463-1.119 0-.286-.051-.522-.151-.707a1.114 1.114 0 0 0-.417-.428 1.683 1.683 0 0 0-.597-.215 3.609 3.609 0 0 0-.697-.061H4.71v2.875h2.742zm.151 5.239c.267 0 .521-.023.76-.077.241-.052.455-.136.637-.261.182-.12.332-.283.44-.491.109-.206.162-.475.162-.798 0-.634-.179-1.085-.533-1.358-.355-.27-.831-.404-1.414-.404H4.71v3.39h2.893zm8.565-.041c.367.358.896.538 1.584.538.493 0 .919-.125 1.278-.373.354-.249.57-.515.653-.79h2.155c-.346 1.072-.871 1.838-1.589 2.299-.709.463-1.572.693-2.58.693-.702 0-1.334-.113-1.9-.337a4.033 4.033 0 0 1-1.439-.958 4.37 4.37 0 0 1-.905-1.485 5.433 5.433 0 0 1-.32-1.899c0-.666.111-1.289.329-1.864a4.376 4.376 0 0 1 .934-1.493c.405-.42.885-.751 1.444-.994a4.634 4.634 0 0 1 1.858-.362c.754 0 1.413.146 1.979.44a3.967 3.967 0 0 1 1.39 1.182c.363.493.622 1.058.783 1.691.161.632.217 1.292.171 1.983h-6.431c.001.704.238 1.371.606 1.729zm2.812-4.681c-.291-.322-.783-.496-1.385-.496-.391 0-.714.065-.974.199a1.97 1.97 0 0 0-.62.491 1.772 1.772 0 0 0-.328.628 2.82 2.82 0 0 0-.111.587h3.982c-.058-.624-.272-1.085-.564-1.409zm-3.918-4.663h4.989v1.215h-4.989z"/></svg>
+          </a>
+          <a href="https://pin.it/Z5fSh5GfE" class="hover:text-zinc-900">
+            <svg width="20px" height="20px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.99 2C6.472 2 2 6.473 2 11.99c0 4.232 2.633 7.85 6.35 9.306-.088-.79-.166-2.006.034-2.868.182-.78 1.172-4.966 1.172-4.966s-.299-.599-.299-1.484c0-1.388.805-2.425 1.808-2.425.853 0 1.264.64 1.264 1.407 0 .858-.546 2.139-.827 3.327-.235.994.499 1.805 1.479 1.805 1.775 0 3.141-1.872 3.141-4.575 0-2.392-1.719-4.064-4.173-4.064-2.843 0-4.512 2.132-4.512 4.335 0 .858.331 1.779.744 2.28a.3.3 0 0 1 .069.286c-.076.315-.245.994-.277 1.133-.044.183-.145.222-.335.134-1.247-.581-2.027-2.405-2.027-3.871 0-3.151 2.289-6.045 6.601-6.045 3.466 0 6.159 2.469 6.159 5.77 0 3.444-2.171 6.213-5.184 6.213-1.013 0-1.964-.525-2.29-1.146l-.623 2.374c-.225.868-.834 1.956-1.241 2.62a10 10 0 0 0 2.958.445c5.517 0 9.99-4.473 9.99-9.99S17.507 2 11.99 2"/></svg>
+          </a>
+            </div>
+          <span>2026 © copyright</span>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Cursor feedback (desktop) -->
+  <canvas id="cursor-spray" aria-hidden="true"></canvas>
+  <div id="cursor-dot" aria-hidden="true"></div>
+  <div id="cursor-ring" aria-hidden="true"></div>
+
+  <script>
+    (function() {
+      document.body.classList.add('is-loading');
+
+      const menuBtn = document.getElementById('menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const navLinks = document.querySelectorAll('.nav-link');
+      const navInk = document.getElementById('nav-ink');
+      const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Hamburger menu toggle
+      if (menuBtn && mobileMenu) {
+        menuBtn.addEventListener('click', function() {
+          const isOpen = mobileMenu.classList.contains('hidden');
+          mobileMenu.classList.toggle('hidden', !isOpen);
+          menuBtn.setAttribute('aria-expanded', isOpen);
+          menuBtn.classList.toggle('open', isOpen);
+        });
+      }
+
+      // Scroll to section when nav link is clicked
+      navLinks.forEach(function(link) {
+        link.addEventListener('click', function() {
+          const targetId = this.getAttribute('data-nav');
+          const section = document.getElementById(targetId);
+          if (section) {
+            section.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'start' });
+          }
+          // Close mobile menu
+          if (mobileMenu && menuBtn) {
+            mobileMenu.classList.add('hidden');
+            menuBtn.setAttribute('aria-expanded', 'false');
+            menuBtn.classList.remove('open');
+          }
+        });
+      });
+
+      // Initial page fade-in + hero intro
+      window.addEventListener('load', function() {
+        document.body.classList.remove('is-loading');
+        document.body.classList.add('is-loaded');
+      });
+
+      // Scroll reveal observer
+      const revealEls = Array.from(document.querySelectorAll('.reveal'));
+      if (!prefersReduced && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              io.unobserve(entry.target);
+            }
+          });
+        }, { root: null, threshold: 0.12, rootMargin: '0px 0px -10% 0px' });
+        revealEls.forEach((el) => io.observe(el));
+      } else {
+        revealEls.forEach((el) => el.classList.add('is-visible'));
+      }
+
+      // Parallax depth on hero (subtle)
+      const heroFrame = document.getElementById('hero-frame');
+      if (!prefersReduced && heroFrame) {
+        const parallax = () => {
+          const rect = heroFrame.getBoundingClientRect();
+          const vh = window.innerHeight || 1;
+          const progress = (rect.top + rect.height * 0.5 - vh * 0.5) / vh; // -1..1-ish
+          const y = Math.max(-18, Math.min(18, progress * 18));
+          heroFrame.style.transform = `translate3d(0, ${y}px, 0)`;
+        };
+        parallax();
+        window.addEventListener('scroll', parallax, { passive: true });
+        window.addEventListener('resize', parallax);
+      }
+
+      // Animated nav underline + active section highlight
+      const sectionIds = ['about', 'services', 'projects', 'contact'];
+
+      function setActiveNav(id) {
+        navLinks.forEach((lnk) => lnk.classList.toggle('is-active', lnk.getAttribute('data-nav') === id));
+        if (!navInk) return;
+        const activeDesktop = document.querySelector(`#desktop-nav .nav-link[data-nav="${id}"]`);
+        if (!activeDesktop || getComputedStyle(activeDesktop).display === 'none') {
+          navInk.style.opacity = '0';
+          return;
+        }
+        const nav = activeDesktop.closest('nav');
+        const navRect = nav.getBoundingClientRect();
+        const r = activeDesktop.getBoundingClientRect();
+        navInk.style.opacity = '1';
+        navInk.style.width = `${Math.max(18, r.width)}px`;
+        navInk.style.transform = `translate3d(${r.left - navRect.left}px, 0, 0)`;
+      }
+
+      if ('IntersectionObserver' in window) {
+        const sectionObserver = new IntersectionObserver((entries) => {
+          const visible = entries
+            .filter((e) => e.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (visible && visible.target && visible.target.id) setActiveNav(visible.target.id);
+        }, { threshold: [0.2, 0.35, 0.5], rootMargin: '-10% 0px -70% 0px' });
+        sectionIds.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) sectionObserver.observe(el);
+        });
+      } else {
+        setActiveNav('about');
+      }
+      window.addEventListener('resize', () => {
+        const current = sectionIds.find((id) => document.querySelector(`.nav-link[data-nav="${id}"]`)?.classList.contains('is-active')) || 'about';
+        setActiveNav(current);
+      });
+
+      // Cursor feedback (desktop only)
+      const sprayCanvas = document.getElementById('cursor-spray');
+      const dot = document.getElementById('cursor-dot');
+      const ring = document.getElementById('cursor-ring');
+      const isFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+      if (!prefersReduced && isFinePointer && dot && ring && sprayCanvas) {
+        document.body.classList.add('cursor-ready');
+        let mx = 0, my = 0, rx = 0, ry = 0;
+        const onMove = (e) => { mx = e.clientX; my = e.clientY; };
+        window.addEventListener('mousemove', onMove, { passive: true });
+
+        // Pointer spray (particles)
+        const ctx = sprayCanvas.getContext('2d', { alpha: true });
+        const getDpr = () => Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        let dpr = getDpr();
+        const resizeSpray = () => {
+          dpr = getDpr();
+          sprayCanvas.width = Math.floor(window.innerWidth * dpr);
+          sprayCanvas.height = Math.floor(window.innerHeight * dpr);
+          sprayCanvas.style.width = `${window.innerWidth}px`;
+          sprayCanvas.style.height = `${window.innerHeight}px`;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        resizeSpray();
+        window.addEventListener('resize', resizeSpray);
+
+        const particles = [];
+        const rand = (a, b) => a + Math.random() * (b - a);
+        // Holi palette (vibrant powder colors)
+        const HOLI = [
+          { r: 255, g: 77,  b: 141 }, // pink
+          { r: 168, g: 85,  b: 247 }, // purple
+          { r: 59,  g: 130, b: 246 }, // blue
+          { r: 34,  g: 197, b: 94  }, // green
+          { r: 250, g: 204, b: 21  }, // yellow
+          { r: 242, g: 107, b: 29  }, // orange
+          { r: 236, g: 72,  b: 153 }, // fuchsia
+        ];
+        let lastSprayT = 0;
+        let lastX = 0, lastY = 0;
+
+        const emit = (x, y, strength) => {
+          const count = Math.max(3, Math.min(18, Math.floor(strength)));
+          for (let i = 0; i < count; i++) {
+            const ang = rand(0, Math.PI * 2);
+            const spd = rand(0.7, 2.6);
+            const color = HOLI[Math.floor(rand(0, HOLI.length))];
+            particles.push({
+              x: x + rand(-2, 2),
+              y: y + rand(-2, 2),
+              vx: Math.cos(ang) * spd + rand(-0.2, 0.2),
+              vy: Math.sin(ang) * spd + rand(-0.2, 0.2),
+              r: rand(1.6, 4.6),
+              a: rand(0.30, 0.75),
+              cr: color.r,
+              cg: color.g,
+              cb: color.b,
+              life: rand(520, 1100),
+              t0: performance.now()
+            });
+          }
+        };
+
+        const sprayOnMove = (e) => {
+          const t = performance.now();
+          const dt = t - lastSprayT;
+          if (dt < 12) return; // throttle
+          lastSprayT = t;
+
+          const x = e.clientX;
+          const y = e.clientY;
+          const speed = Math.min(18, Math.hypot(x - lastX, y - lastY));
+          emit(x, y, 2 + speed * 0.7);
+          lastX = x;
+          lastY = y;
+        };
+        window.addEventListener('mousemove', sprayOnMove, { passive: true });
+        const tick = () => {
+          rx += (mx - rx) * 0.18;
+          ry += (my - ry) * 0.18;
+          dot.style.left = `${mx}px`; dot.style.top = `${my}px`;
+          ring.style.left = `${rx}px`; ring.style.top = `${ry}px`;
+
+          // Draw spray (Holi powder look)
+          ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+          ctx.globalCompositeOperation = 'lighter';
+          const now = performance.now();
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            const age = now - p.t0;
+            if (age >= p.life) {
+              particles.splice(i, 1);
+              continue;
+            }
+            const k = age / p.life;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vx *= 0.985;
+            p.vy *= 0.985;
+            const alpha = p.a * (1 - k);
+            ctx.beginPath();
+            ctx.fillStyle = `rgba(${p.cr}, ${p.cg}, ${p.cb}, ${alpha})`;
+            // Slightly "powdery" blob: small jitter + non-linear shrink
+            const rad = p.r * (1 - k * 0.35);
+            ctx.arc(p.x + (Math.sin(p.x * 0.02 + now * 0.004) * 0.6), p.y + (Math.cos(p.y * 0.02 + now * 0.004) * 0.6), rad, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.globalCompositeOperation = 'source-over';
+
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+
+        const hoverTargets = 'a, button, [role="button"], .hover-lift';
+        const setHover = (on) => document.body.classList.toggle('cursor-hover', on);
+        document.addEventListener('mouseover', (e) => {
+          if (e.target && e.target.closest && e.target.closest(hoverTargets)) setHover(true);
+        });
+        document.addEventListener('mouseout', (e) => {
+          if (e.target && e.target.closest && e.target.closest(hoverTargets)) setHover(false);
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
